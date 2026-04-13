@@ -24,22 +24,46 @@ export function CommentSection({ drugId }: Props) {
     }
     const client = getSupabaseClient();
     if (!client) { setLoading(false); return; }
-    const { data, error } = await client
-      .from('comments_with_likes')
+
+    // VIEWを使わず comments テーブルに直接クエリ
+    const { data: commentsData, error } = await client
+      .from('comments')
       .select('*')
       .eq('drug_id', drugId)
-      .order('like_count', { ascending: false })
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setComments(data as Comment[]);
-      const liked = new Set(
-        (data as Comment[])
-          .filter((c) => isCommentLiked(c.id))
-          .map((c) => c.id)
-      );
-      setLikedIds(liked);
+    if (error || !commentsData) { setLoading(false); return; }
+
+    // いいね数を comment_likes テーブルから集計
+    const ids = commentsData.map((row) => row.id as string);
+    let likeCountMap: Record<string, number> = {};
+    if (ids.length > 0) {
+      const { data: likesData } = await client
+        .from('comment_likes')
+        .select('comment_id')
+        .in('comment_id', ids);
+
+      (likesData ?? []).forEach((row) => {
+        const cid = row.comment_id as string;
+        likeCountMap[cid] = (likeCountMap[cid] ?? 0) + 1;
+      });
     }
+
+    const merged: Comment[] = commentsData.map((row) => ({
+      id: row.id as string,
+      drug_id: row.drug_id as number,
+      device_id: row.device_id as string,
+      body: row.body as string,
+      created_at: row.created_at as string,
+      like_count: likeCountMap[row.id as string] ?? 0,
+    }));
+
+    // いいね順 → 日時順に並べ替え
+    merged.sort((a, b) => b.like_count - a.like_count || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    setComments(merged);
+    const liked = new Set(merged.filter((c) => isCommentLiked(c.id)).map((c) => c.id));
+    setLikedIds(liked);
     setLoading(false);
   }, [drugId]);
 
