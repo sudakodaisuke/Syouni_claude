@@ -1,0 +1,31 @@
+{
+  "name": "syouni-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "prebuild": "tsx scripts/build-data.ts",
+    "dev": "tsx scripts/build-data.ts && next dev --turbopack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "build-data": "tsx scripts/build-data.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.103.0",
+    "csv-parse": "^6.2.1",
+    "next": "16.2.3",
+    "next-pwa": "^5.6.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}
